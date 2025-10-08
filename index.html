@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESP32 Temperature Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+    body {
+      transition: all 0.4s ease;
+      background: linear-gradient(to bottom right, #f5f6fa, #dcdde1);
+      color: #222;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    body.dark {
+      background: radial-gradient(circle at top left, #11132a, #1b1f3b, #24284f);
+      color: #fff;
+    }
+    /* ---------- Toggle Button ---------- */
+    .toggle-theme {
+      position: fixed;
+      top: 10px;
+      right: 15px;
+      background: rgba(0, 0, 0, 0.05);
+      border: none;
+      color: #000;
+      padding: 10px 20px;
+      border-radius: 25px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 20;
+    }
+    .toggle-theme:hover {
+      transform: scale(1.05);
+      background: rgba(0, 0, 0, 0.1);
+    }
+    body.dark .toggle-theme {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+    body.dark .toggle-theme:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    /* ---------- Popup ---------- */
+    .popup {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 10, 20, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 10;
+      animation: fadeIn 0.8s ease forwards;
+      color: #fff;
+    }
+    .popup h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+    .popup p {
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+      max-width: 250px;
+    }
+    .popup button {
+      background: linear-gradient(135deg, #03c6ba, #029b8e);
+      color: white;
+      border: none;
+      padding: 12px 26px;
+      border-radius: 50px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .popup button:hover {
+      background: linear-gradient(135deg, #04d1c3, #03b9a8);
+      transform: translateY(-3px);
+    }
+    /* ---------- Dashboard ---------- */
+    .dashboard {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: fadeInUp 0.8s ease forwards;
+      text-align: center;
+    }
+    .tab-content {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 20px;
+      padding: 40px 60px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      transition: 0.3s;
+    }
+    body.dark .tab-content {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(15px);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+    .temp-value {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #04d1c3;
+      text-shadow: 0 0 15px rgba(3, 198, 186, 0.4);
+    }
+    .status {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 10px;
+      font-style: italic;
+    }
+    body.dark .status {
+      color: #aaa;
+    }
+    footer {
+      position: absolute;
+      bottom: 20px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+    body.dark footer {
+      color: #888;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- ---------- Theme Toggle ---------- -->
+  <button class="toggle-theme" id="themeToggle" onclick="toggleTheme()">🌙 Dark Mode</button>
+  <!-- ---------- Popup ---------- -->
+  <div class="popup" id="popup">
+    <h1>🌡️ ESP32 Temperature Dashboard</h1>
+    <p>View real-time readings from your IoT temperature sensor.</p>
+    <button onclick="launchApp()">Launch App</button>
+  </div>
+  <!-- ---------- Dashboard ---------- -->
+  <div class="dashboard" id="dashboard">
+    <div id="digital" class="tab-content">
+      <h2>Digital Temperature Reading</h2>
+      <div class="temp-value" id="temperature">-- °C</div>
+      <div class="status" id="status">Connecting to ESP32...</div>
+    </div>
+  </div>
+  <footer>Developed by SWEp 2 Embedded Systems Team | Powered by ESP32 IoT</footer>
+  <script>
+    // Default: Light mode
+    let darkMode = false;
+    function launchApp() {
+      document.getElementById("popup").style.display = "none";
+      document.getElementById("dashboard").style.display = "flex";
+      fetchTemperature();
+      setInterval(fetchTemperature, 3000);
+    }
+    async function fetchTemperature() {
+      const tempEl = document.getElementById("temperature");
+      const statusEl = document.getElementById("status");
+      try {
+        const response = await fetch("/api/temperature");
+        const data = await response.json();
+        const temp = data.temperature;
+        tempEl.textContent = temp + " °C";
+        statusEl.textContent = "Sensor Connected ✅";
+      } catch (error) {
+        tempEl.textContent = "-- °C";
+        statusEl.textContent = "Connection Lost ⚠️ Retrying...";
+      }
+    }
+    function toggleTheme() {
+      const body = document.body;
+      const toggleBtn = document.getElementById("themeToggle");
+      darkMode = !darkMode;
+      body.classList.toggle("dark", darkMode);
+      toggleBtn.textContent = darkMode ? "☀️ Light Mode" : "🌙 Dark Mode";
+    }
+  </script>
+</body>
+</html>
