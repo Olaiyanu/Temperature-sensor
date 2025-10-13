@@ -176,19 +176,20 @@
       setInterval(fetchTemperature, 3000);
     }
     async function fetchTemperature() {
-      const tempEl = document.getElementById("temperature");
-      const statusEl = document.getElementById("status");
-      try {
-        const response = await fetch("/api/temperature");
-        const data = await response.json();
-        const temp = data.temperature;
-        tempEl.textContent = temp + " °C";
-        statusEl.textContent = "Sensor Connected ✅";
-      } catch (error) {
-        tempEl.textContent = "-- °C";
-        statusEl.textContent = "Connection Lost ⚠️ Retrying...";
-      }
-    }
+  const tempEl = document.getElementById("temperature");
+  const statusEl = document.getElementById("status");
+  try {
+    const response = await fetch(
+      "https://blynk.cloud/external/api/get?token=9Owq6_TyIWmB-A3nkzxGKHDGurQUK8T4&V0"
+    );
+    const temp = await response.text();
+    tempEl.textContent = temp + " °C";
+    statusEl.textContent = "Sensor Connected ✅";
+  } catch (error) {
+    tempEl.textContent = "-- °C";
+    statusEl.textContent = "Connection Lost ⚠️ Retrying...";
+  }
+}
     function toggleTheme() {
       const body = document.body;
       const toggleBtn = document.getElementById("themeToggle");
@@ -196,6 +197,7 @@
       body.classList.toggle("dark", darkMode);
       toggleBtn.textContent = darkMode ? "☀️ Light Mode" : "🌙 Dark Mode";
     }
+
   </script>
 </body>
 </html>
